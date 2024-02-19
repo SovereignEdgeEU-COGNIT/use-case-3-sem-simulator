@@ -1,0 +1,17 @@
+#
+# Config file for building SEM package in python
+#
+# Copyright 2023-2024 Phoenix Systems
+# Author: Mateusz Kobak
+#
+
+
+[build-system]
+requires = ["setuptools>=61", "typing_extensions"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "phoenixsystems-sem"
+description = "Simulator of energy meter"
+requires-python = ">=3.9"
+version = "0.1.0"

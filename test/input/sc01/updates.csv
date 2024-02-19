@@ -1,0 +1,4 @@
+Timestamp,currentTarifff,frequency,U0,U1,U2,I0,I1,I2,ui_angle0,ui_angle1,ui_angle2,thdU0,thdU1,thdU2,thdI0,thdI1,thdI2
+0,0,50,220,220,220,50,50,50,0,30,60,0,0,0,0,0,0
+2,0,50,220,220,220,50,50,50,90,120,275,,,,,,
+4,0,50,0,220,220,50,0,50,0,120,275,,,,,,

@@ -1,0 +1,6 @@
+[submodule "sem-simulator/external/tomlc99"]
+	path = external/tomlc99
+	url = https://github.com/cktan/tomlc99
+[submodule "sem-simulator/external/Unity"]
+	path = external/Unity
+	url = https://github.com/ThrowTheSwitch/Unity

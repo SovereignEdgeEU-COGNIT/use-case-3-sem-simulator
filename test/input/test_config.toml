@@ -1,0 +1,42 @@
+serialNumber = "abcde54321"
+tariffCount = 12
+phaseCount = 2
+meterConstant = 7200
+speedup = 4
+startTimestamp = 1979-05-27T07:32:00
+
+[[tariff]] # 0
+[tariff.phase3]
+activePlus = 1236
+
+[[tariff]] # 1
+
+[[tariff]] # 2
+[tariff.phase2]
+activePlus = 42949672950
+
+[[tariff]] # 3
+
+[[tariff]] # 4
+
+[[tariff]] # 5
+[tariff.phase1]
+activePlus = 1235
+[tariff.phase3]
+reactive4 = 78
+
+[[tariff]] # 6
+
+[[tariff]] # 7
+
+[[tariff]] # 8
+
+[[tariff]] # 9
+
+[[tariff]] # 10
+[tariff.phase1]
+reactive1 = 11
+
+[[tariff]] # 11
+[tariff.phase1]
+activeMinus = 7
