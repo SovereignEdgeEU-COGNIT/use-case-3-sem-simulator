@@ -94,6 +94,7 @@ static void simulator_updateDevices(simulator_ctx_t *sctx, metersim_infoForDevic
 {
 	calculator_bias_t bias = { 0 };
 	info->now = sctx->now;
+	info->nowUtc = sctx->now + sctx->state.cfg.startTime;
 	devicemgr_updateDevices(sctx->devmgrCtx, &bias, info);
 
 	sctx->bias = bias;

@@ -170,6 +170,9 @@ lib.metersim_getSerialNumber.restype = c_int
 lib.metersim_getTimeUTC.argtypes = [c_void_p, POINTER(c_int64)]
 lib.metersim_getTimeUTC.restype = None
 
+lib.metersim_setTimeUTC.argtypes = [c_void_p, c_int64]
+lib.metersim_setTimeUTC.restype = None
+
 lib.metersim_getUptime.argtypes = [c_void_p, POINTER(c_int32)]
 lib.metersim_getUptime.restype = None
 
@@ -296,8 +299,11 @@ class Metersim:
         return ret.value.decode()
 
     def get_time_utc(self) -> int:
-        ret = self._call_helper(lib.metersim_getTimeUTC, c_int)
+        ret = self._call_helper(lib.metersim_getTimeUTC, c_int64)
         return ret.contents.value
+    
+    def set_time_utc(self, time) -> None:
+        lib.metersim_setTimeUTC(self.ctx, c_int64(time))
 
     def get_uptime(self) -> int:
         ret = self._call_helper(lib.metersim_getUptime, c_int)
