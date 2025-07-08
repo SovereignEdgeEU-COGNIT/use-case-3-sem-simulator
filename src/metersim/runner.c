@@ -159,6 +159,14 @@ int32_t runner_getTime(runner_ctx_t *rctx)
 }
 
 
+void runner_setTimeUtc(runner_ctx_t *rctx, int64_t time)
+{
+	pthread_mutex_lock(&rctx->lock);
+	rctx->sctx->state.cfg.startTime = time - rctx->sctx->now;
+	pthread_mutex_unlock(&rctx->lock);
+}
+
+
 int runner_start(runner_ctx_t *rctx)
 {
 	int ret = 0;

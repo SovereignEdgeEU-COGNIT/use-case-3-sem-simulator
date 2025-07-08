@@ -225,6 +225,20 @@ void metersim_getTimeUTC(metersim_ctx_t *ctx, int64_t *retTime)
 }
 
 
+void metersim_setTimeUTC(metersim_ctx_t *ctx, int64_t time)
+{
+	if (ctx->runner != NULL) {
+		runner_update(ctx->runner);
+		runner_setTimeUtc(ctx->runner, time);
+	}
+	else {
+		int32_t uptime;
+		metersim_getUptime(ctx, &uptime);
+		ctx->simulator->state.cfg.startTime = time - uptime;
+	}
+}
+
+
 void metersim_getUptime(metersim_ctx_t *ctx, int32_t *retSeconds)
 {
 	if (ctx->runner != NULL) {

@@ -99,6 +99,10 @@ int metersim_getSerialNumber(metersim_ctx_t *ctx, int idx, char *dstBuf, size_t 
 void metersim_getTimeUTC(metersim_ctx_t *ctx, int64_t *retTime);
 
 
+/* Set current UTC time */
+void metersim_setTimeUTC(metersim_ctx_t *ctx, int64_t time);
+
+
 /* Get simulator uptime (seconds) */
 void metersim_getUptime(metersim_ctx_t *ctx, int32_t *retSeconds);
 

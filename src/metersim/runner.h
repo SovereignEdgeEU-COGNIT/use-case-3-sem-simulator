@@ -53,6 +53,9 @@ bool runner_isRunning(runner_ctx_t *rctx);
 int32_t runner_getTime(runner_ctx_t *rctx);
 
 
+void runner_setTimeUtc(runner_ctx_t *rctx, int64_t time);
+
+
 int runner_start(runner_ctx_t *rctx);
 
 
