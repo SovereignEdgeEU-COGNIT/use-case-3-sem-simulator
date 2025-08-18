@@ -10,10 +10,13 @@ from pathlib import Path
 import logging
 from ctypes import (
     CDLL,
+    CFUNCTYPE,
     c_int,
     c_float,
     c_double,
     c_char_p,
+    c_uint64,
+    c_ulong,
     c_void_p,
     c_int64,
     c_size_t,
@@ -39,6 +42,7 @@ from phoenixsystems.sem.device import (
     Device,
     DeviceMgr,
 )
+from phoenixsystems.sem.time import TimeMachine
 
 
 """
@@ -137,6 +141,9 @@ lib.metersim_free.restype = None
 
 lib.metersim_createRunner.argtypes = [c_void_p, c_int]
 lib.metersim_createRunner.restype = c_int
+
+lib.metersim_createRunnerWithCb.argtypes = [c_void_p, c_void_p, c_void_p]
+lib.metersim_createRunnerWithCb.restype = c_int
 
 lib.metersim_destroyRunner.argtypes = [c_void_p]
 lib.metersim_destroyRunner.restype = None
@@ -249,6 +256,17 @@ class Metersim:
         if status != 0:
             raise MetersimException("Could not initialize runner")
 
+    def create_runner_custom_time(self, time_machine: TimeMachine) -> None:
+        @CFUNCTYPE(c_ulong, c_void_p)
+        def c_time_cb(ptr: c_void_p) -> c_ulong:
+            now = time_machine.get_time_utc()
+            ret = now
+            return ret
+        self.c_time_cb = c_time_cb
+        status = lib.metersim_createRunnerWithCb(self.ctx, self.c_time_cb, None)
+        if status != 0:
+            raise MetersimException("Could not initialize runner")
+
     def destroy_runner(self) -> None:
         lib.metersim_destroyRunner(self.ctx)
 
@@ -301,7 +319,7 @@ class Metersim:
     def get_time_utc(self) -> int:
         ret = self._call_helper(lib.metersim_getTimeUTC, c_int64)
         return ret.contents.value
-    
+
     def set_time_utc(self, time) -> None:
         lib.metersim_setTimeUTC(self.ctx, c_int64(time))
 

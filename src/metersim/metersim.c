@@ -59,7 +59,7 @@ int metersim_createRunner(metersim_ctx_t *ctx, int start)
 		return METERSIM_ERROR;
 	}
 
-	ctx->runner = runner_init(ctx->simulator);
+	ctx->runner = runner_init(ctx->simulator, NULL, NULL);
 	if (ctx->runner == NULL) {
 		return METERSIM_ERROR;
 	}
@@ -67,6 +67,26 @@ int metersim_createRunner(metersim_ctx_t *ctx, int start)
 	/* Pause immediately if start == 0 */
 	if (start == 0) {
 		runner_pause(ctx->runner, 0);
+	}
+
+	if (runner_start(ctx->runner) < 0) {
+		runner_destroy(ctx->runner);
+		return METERSIM_ERROR;
+	}
+
+	return METERSIM_SUCCESS;
+}
+
+
+int metersim_createRunnerWithCb(metersim_ctx_t *ctx, uint64_t (*getTimeCb)(void *), void *args)
+{
+	if (ctx->runner != NULL) {
+		return METERSIM_ERROR;
+	}
+
+	ctx->runner = runner_init(ctx->simulator, getTimeCb, args);
+	if (ctx->runner == NULL) {
+		return METERSIM_ERROR;
 	}
 
 	if (runner_start(ctx->runner) < 0) {
@@ -219,9 +239,14 @@ int metersim_getSerialNumber(metersim_ctx_t *ctx, int idx, char *dstBuf, size_t 
 
 void metersim_getTimeUTC(metersim_ctx_t *ctx, int64_t *retTime)
 {
-	int32_t uptime;
-	metersim_getUptime(ctx, &uptime);
-	*retTime = ctx->simulator->state.cfg.startTime + (int64_t)uptime;
+	if (ctx->runner != NULL) {
+		*retTime = runner_getTimeUtc(ctx->runner);
+	}
+	else {
+		int32_t uptime;
+		metersim_getUptime(ctx, &uptime);
+		*retTime = ctx->simulator->state.cfg.startTime + (int64_t)uptime;
+	}
 }
 
 

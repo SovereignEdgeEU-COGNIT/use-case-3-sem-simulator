@@ -12,6 +12,7 @@
 #include <math.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <time.h>
 
 #include <metersim/metersim_types.h>
 #include <metersim/metersim.h>
@@ -169,6 +170,32 @@ void testUptime(void)
 }
 
 
+static uint64_t timeCb(void *arg)
+{
+	(void)arg;
+	struct timespec ts;
+	clock_gettime(CLOCK_REALTIME, &ts);
+	return ts.tv_sec;
+}
+
+
+void testCustomTimeCb(void)
+{
+	int32_t uptime;
+	metersim_instant_t instant;
+
+	metersim_createRunnerWithCb(common.ctx, timeCb, NULL);
+
+	usleep(2000 * 1000);
+
+	metersim_getInstant(common.ctx, &instant);
+
+	metersim_getUptime(common.ctx, &uptime);
+	TEST_ASSERT_EQUAL_INT32(2, uptime);
+	metersim_destroyRunner(common.ctx);
+}
+
+
 void testIsRunning(void)
 {
 	int32_t uptime;
@@ -264,6 +291,7 @@ int main(int argc, char **args)
 
 	RUN_TEST(testStepForward);
 	RUN_TEST(testRunner);
+	RUN_TEST(testCustomTimeCb);
 	RUN_TEST(testUptime);
 	RUN_TEST(testIsRunning);
 	RUN_TEST(testFrequentSpeedupChanges);

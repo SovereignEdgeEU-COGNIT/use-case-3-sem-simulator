@@ -46,6 +46,10 @@ void runner_update(runner_ctx_t *rctx)
 
 void runner_setSpeedup(runner_ctx_t *rctx, uint16_t speedup)
 {
+	if (rctx->type != runner_typeTimeMachine) {
+		return;
+	}
+
 	pthread_mutex_lock(&rctx->lock);
 	timeMachine_setSpeedup(&rctx->tmCtx, speedup);
 	pthread_mutex_unlock(&rctx->lock);
@@ -65,7 +69,57 @@ static void _pauseAndWait(runner_ctx_t *rctx)
 }
 
 
-static void *runnerThread(void *arg)
+static void _sleepOnCond(runner_ctx_t *rctx, int16_t sleepMilisec)
+{
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	ts.tv_nsec += (long)(sleepMilisec % 1000) * 1000 * 1000;
+	if (ts.tv_nsec >= 1000 * 1000 * 1000) {
+		ts.tv_nsec -= 1000 * 1000 * 1000;
+		ts.tv_sec++;
+	}
+	ts.tv_sec += sleepMilisec / 1000;
+	pthread_cond_timedwait(&rctx->cond, &rctx->lock, &ts);
+}
+
+
+static void *runnerCustomeGetTimeThread(void *arg)
+{
+	int32_t nowMono = 0;
+	uint64_t nowUtc = 0;
+	runner_ctx_t *rctx = (runner_ctx_t *)arg;
+	simulator_ctx_t *sctx = rctx->sctx;
+
+	pthread_mutex_lock(&rctx->lock);
+
+	nowUtc = rctx->getTimeCb(rctx->cbArgs);
+	uint64_t startUtc = nowUtc;
+
+	rctx->running = true;
+
+	log_debug("Starting custom time runner");
+	for (;;) {
+		nowUtc = rctx->getTimeCb(rctx->cbArgs);
+		nowMono = (int32_t)(nowUtc - startUtc);
+		simulator_stepForward(sctx, nowMono - sctx->now);
+
+		if (rctx->shutdownFlag) {
+			break;
+		}
+
+		rctx->updating = false;
+		pthread_cond_broadcast(&rctx->cond);
+		_sleepOnCond(rctx, 100);
+	}
+	rctx->running = false;
+	pthread_mutex_unlock(&rctx->lock);
+	log_debug("Finishing runner");
+
+	return NULL;
+}
+
+
+static void *runnerTimeMachineThread(void *arg)
 {
 	int32_t now = 0;
 	int32_t nextWakeupTime = 0;
@@ -76,7 +130,7 @@ static void *runnerThread(void *arg)
 
 	rctx->running = true;
 
-	log_debug("Starting runner");
+	log_debug("Starting time machine runner");
 	for (;;) {
 		now = timeMachine_gettime(&rctx->tmCtx);
 		simulator_stepForward(sctx, now - sctx->now);
@@ -118,6 +172,10 @@ static void *runnerThread(void *arg)
 
 void runner_resume(runner_ctx_t *rctx)
 {
+	if (rctx->type != runner_typeTimeMachine) {
+		return;
+	}
+
 	pthread_mutex_lock(&rctx->lock);
 	rctx->running = true;
 	if (rctx->stopTime <= rctx->sctx->now) {
@@ -132,6 +190,10 @@ void runner_resume(runner_ctx_t *rctx)
 
 void runner_pause(runner_ctx_t *rctx, int32_t when)
 {
+	if (rctx->type != runner_typeTimeMachine) {
+		return;
+	}
+
 	pthread_mutex_lock(&rctx->lock);
 	rctx->stopTime = timeMachine_setStop(&rctx->tmCtx, when);
 	pthread_cond_broadcast(&rctx->cond);
@@ -154,6 +216,27 @@ int32_t runner_getTime(runner_ctx_t *rctx)
 	int32_t ret;
 	pthread_mutex_lock(&rctx->lock);
 	ret = rctx->sctx->now;
+	pthread_mutex_unlock(&rctx->lock);
+	return ret;
+}
+
+
+int64_t runner_getTimeUtc(runner_ctx_t *rctx)
+{
+	int64_t ret;
+	pthread_mutex_lock(&rctx->lock);
+	switch (rctx->type) {
+		case runner_typeTimeMachine:
+			ret = rctx->sctx->state.cfg.startTime + rctx->sctx->now;
+			break;
+
+		case runner_typeCustomGetTime:
+			ret = (int64_t)rctx->getTimeCb(rctx->cbArgs);
+			break;
+
+		default:
+			return -1;
+	}
 	pthread_mutex_unlock(&rctx->lock);
 	return ret;
 }
@@ -182,11 +265,26 @@ int runner_start(runner_ctx_t *rctx)
 		return ret;
 	}
 
-	if (rctx->stopTime != 0) {
+	if (rctx->type == runner_typeTimeMachine && rctx->stopTime != 0) {
 		timeMachine_start(&rctx->tmCtx, rctx->sctx->now);
 	}
 
-	ret = pthread_create(&rctx->runnerThread, &attr, runnerThread, rctx);
+	void *mainThread = NULL;
+	switch (rctx->type) {
+		case runner_typeTimeMachine:
+			mainThread = runnerTimeMachineThread;
+			break;
+
+		case runner_typeCustomGetTime:
+			mainThread = runnerCustomeGetTimeThread;
+			break;
+
+		default:
+			pthread_attr_destroy(&attr);
+			return -1;
+	}
+
+	ret = pthread_create(&rctx->runnerThread, &attr, mainThread, rctx);
 	pthread_attr_destroy(&attr);
 
 	return ret;
@@ -208,13 +306,18 @@ void runner_finish(runner_ctx_t *rctx)
 }
 
 
-runner_ctx_t *runner_init(simulator_ctx_t *sctx)
+runner_ctx_t *runner_init(simulator_ctx_t *sctx, uint64_t (*getTimeCb)(void *), void *args)
 {
 	int status = 0;
 	runner_ctx_t *rctx = calloc(1, sizeof(runner_ctx_t));
 	if (rctx == NULL) {
 		return NULL;
 	}
+
+	rctx->getTimeCb = getTimeCb;
+	rctx->cbArgs = args;
+
+	rctx->type = rctx->getTimeCb == NULL ? runner_typeTimeMachine : runner_typeCustomGetTime;
 
 	rctx->sctx = sctx;
 	rctx->shutdownFlag = false;
@@ -251,7 +354,10 @@ runner_ctx_t *runner_init(simulator_ctx_t *sctx)
 		return NULL;
 	}
 
-	timeMachine_init(&rctx->tmCtx, rctx->sctx->state.cfg.speedup);
+	if (rctx->type == runner_typeTimeMachine) {
+		timeMachine_init(&rctx->tmCtx, rctx->sctx->state.cfg.speedup);
+	}
+
 	return rctx;
 }
 
