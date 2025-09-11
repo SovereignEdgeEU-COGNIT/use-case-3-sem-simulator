@@ -222,7 +222,8 @@ Here `ctx` is set by the user and provides user data for the callback. Also, `in
 ```c
 typedef struct {
 	double _Complex voltage[3];  /* Voltage provided by the grid */
-	int32_t now;                 /* Current timestamp */
+	int32_t now;                 /* Current monotonic timestamp (uptime) */
+	int64_t nowUtc;
 } metersim_infoForDevice_t;
 
 typedef struct {

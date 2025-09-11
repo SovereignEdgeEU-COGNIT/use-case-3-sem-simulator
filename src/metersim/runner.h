@@ -19,12 +19,23 @@
 #include "simulator.h"
 
 
+typedef enum {
+	runner_typeTimeMachine,
+	runner_typeCustomGetTime,
+} runner_type_t;
+
+
 typedef struct {
+	runner_type_t type;
+
 	bool updating;
 	bool running;
 	bool shutdownFlag;
 
 	int32_t stopTime;
+
+	uint64_t (*getTimeCb)(void *args);
+	void *cbArgs;
 
 	timeMachine_ctx_t tmCtx;
 	simulator_ctx_t *sctx;
@@ -53,13 +64,19 @@ bool runner_isRunning(runner_ctx_t *rctx);
 int32_t runner_getTime(runner_ctx_t *rctx);
 
 
+int64_t runner_getTimeUtc(runner_ctx_t *rctx);
+
+
+void runner_setTimeUtc(runner_ctx_t *rctx, int64_t time);
+
+
 int runner_start(runner_ctx_t *rctx);
 
 
 void runner_finish(runner_ctx_t *rctx);
 
 
-runner_ctx_t *runner_init(simulator_ctx_t *sctx);
+runner_ctx_t *runner_init(simulator_ctx_t *sctx, uint64_t (*getTimeCb)(void *), void *args);
 
 
 void runner_destroy(runner_ctx_t *rctx);

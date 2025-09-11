@@ -89,6 +89,7 @@ typedef struct {
 typedef struct {
 	double _Complex voltage[3];
 	int32_t now;
+	int64_t nowUtc;
 } metersim_infoForDevice_t;
 
 

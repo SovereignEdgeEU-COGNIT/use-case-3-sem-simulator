@@ -143,6 +143,21 @@ def test_energy(sem):
 
     for i in range(2):
         compare_energy(data_energy[i], expected[i])
+        
+        
+def test_timeUtc(sem):
+    epoch = 1751962320
+    sem.set_time_utc(epoch)
+    sem.create_runner(False)
+
+    speedup = 1000
+    sem.set_speedup(speedup)
+    sem.pause(when=50)
+    sem.resume()
+    time.sleep(0.1)
+    uptime = sem.get_uptime()
+    assert uptime == 50
+    assert sem.get_time_utc() == epoch + 50
 
 
 def check_uptime(actual: int, prev_uptime: int, speedup: int, real_time_elapsed: float, epsilon: float = 0.001):

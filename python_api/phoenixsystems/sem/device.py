@@ -11,6 +11,7 @@ from ctypes import (
     byref,
     c_void_p,
     c_int32,
+    c_int64,
     Structure,
     POINTER,
 )
@@ -34,6 +35,7 @@ class c_metersim_infoForDevicePy_t(Structure):
     _fields_ = [
         ("voltage", c_ComplexPy * 3),
         ("now", c_int32),
+        ("nowUtc", c_int64),
     ]
 
 
@@ -66,13 +68,15 @@ class DeviceResponse:
 class InfoForDevice:
     voltage: list[complex]
     now: int
+    nowUtc: int
 
     @staticmethod
     def get_from_c_struct(c_info: c_metersim_infoForDevicePy_t):  # -> Self
-        info = InfoForDevice([0, 0, 0], -1)
+        info = InfoForDevice([0, 0, 0], -1, -1)
         for i in range(3):
             info.voltage[i] = complex(float(c_info.voltage[i].real), float(c_info.voltage[i].imag))
         info.now = c_info.now
+        info.nowUtc = c_info.nowUtc
         return info
 
 

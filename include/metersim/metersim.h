@@ -39,6 +39,13 @@ int metersim_createRunner(metersim_ctx_t *ctx, int start);
 
 
 /*
+ * Create simulation runner with custom getTimeCb. Returns status code.
+ * The callback should return the UTC time.
+ */
+int metersim_createRunnerWithCb(metersim_ctx_t *ctx, uint64_t (*getTimeCb)(void *), void *args);
+
+
+/*
  * Release runner resources
  * (Function stops the runner if it is still running)
  */
@@ -97,6 +104,10 @@ int metersim_getSerialNumber(metersim_ctx_t *ctx, int idx, char *dstBuf, size_t 
 
 /* Get current absolute timestamp */
 void metersim_getTimeUTC(metersim_ctx_t *ctx, int64_t *retTime);
+
+
+/* Set current UTC time */
+void metersim_setTimeUTC(metersim_ctx_t *ctx, int64_t time);
 
 
 /* Get simulator uptime (seconds) */
