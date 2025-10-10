@@ -59,4 +59,7 @@ class TimeMachine:
 
 
     def get_time_utc(self) -> int:
-        return self.last_update_utc + (TimeMachine._get_host_mono() - self.last_update_host_mono) * self.speedup
+        if self.running:
+            return self.last_update_utc + (TimeMachine._get_host_mono() - self.last_update_host_mono) * self.speedup
+        else:
+            return self.last_update_utc
