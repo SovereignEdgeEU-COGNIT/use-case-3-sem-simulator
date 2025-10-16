@@ -42,8 +42,8 @@ class TimeMachine:
 
     def stop(self):
         if self.running:
-            self.running = False
             self.last_update_utc = self.get_time_utc()
+            self.running = False
 
     def set_speedup(self, speedup: int):
         if self.running:
